@@ -1,6 +1,6 @@
 # ADNI MRI Classification with ConvNeXt-Tiny
 
-Yangjia Yan | Student ID: 4984023 | COMP3710
+Yangjia Yan | Student ID: 49840232 | COMP3710
 
 This project compares a small CNN trained from scratch with an
 ImageNet-pretrained ConvNeXt-Tiny fine-tuned for binary classification
