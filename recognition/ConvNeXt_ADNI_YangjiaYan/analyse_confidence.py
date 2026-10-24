@@ -92,7 +92,7 @@ fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
 colours = {"cnn": "#2878B5", "convnext": "#D95319"}
 
 for model in MODELS:
-    # Select and freeze the referral threshold before reading test scores here.
+    # Select the referral threshold using validation patients only.
     vy, vp, _ = load_rows(model, "val", "patient")
     candidates = []
     for threshold in np.linspace(0.5, 1.0, 51):

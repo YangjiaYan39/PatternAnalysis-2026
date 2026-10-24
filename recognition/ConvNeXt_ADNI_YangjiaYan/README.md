@@ -605,6 +605,13 @@ project preprocessing choices.
 
 ## Figures
 
+The current `train.py` updates `training_curves.png` in the run
+directory after every epoch, showing training and validation loss,
+accuracy and Macro-F1. This plotting feature was added after the
+reported experiments and checked using their saved histories.
+The report figures were generated separately with `plot_results.py`.
+
+
 ```bash
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python plot_results.py
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python plot_architecture.py

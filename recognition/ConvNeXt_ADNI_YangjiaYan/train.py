@@ -249,6 +249,40 @@ def run_epoch(
     }
 
 
+
+def plot_training_history(history, output_path):
+    """Save updated training and validation curves after each epoch."""
+    from matplotlib.figure import Figure
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+    fig = Figure(figsize=(12, 3.5))
+    FigureCanvasAgg(fig)
+    axes = fig.subplots(1, 3)
+    epochs = [row["epoch"] for row in history]
+
+    for ax, metric, title in zip(
+        axes,
+        ("loss", "accuracy", "macro_f1"),
+        ("Cross-entropy loss", "Accuracy", "Macro-F1"),
+    ):
+        for split in ("train", "val"):
+            ax.plot(
+                epochs,
+                [row[split][metric] for row in history],
+                label=split,
+            )
+        ax.set_xlabel("Epoch")
+        ax.set_title(title)
+        ax.grid(alpha=0.2)
+        ax.legend()
+        if metric != "loss":
+            ax.set_ylim(0, 1.03)
+
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=150)
+    fig.clear()
+
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -481,6 +515,10 @@ def main():
                 "seed": args.seed,
                 "pretrained": args.pretrained,
             }, run_dir / "best_model.pth")
+
+        plot_training_history(
+            history, run_dir / "training_curves.png"
+        )
 
     elapsed = time.perf_counter() - start_time
 
