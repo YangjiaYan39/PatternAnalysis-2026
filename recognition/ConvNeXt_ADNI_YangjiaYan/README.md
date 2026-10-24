@@ -572,42 +572,31 @@ failure pattern.
 
 ## Artificial Intelligence Usage Disclosure
 
-I used OpenAI ChatGPT throughout the project for technical explanations,
-implementation assistance, troubleshooting and report preparation.
-Its contribution included substantial code drafts and suggested
-revisions, rather than language editing alone.
+I used OpenAI ChatGPT for technical explanations, implementation assistance,
+troubleshooting and report preparation. Its contribution included code
+drafts and suggested revisions.
 
-AI assistance covered:
+AI assistance included:
 
-- Dataset indexing, patient-independent splitting and leakage checks.
-- The CNN baseline, integration of Torchvision ConvNeXt, training,
-  checkpoint evaluation and prediction scripts.
-- Slurm configuration and interpretation of scheduling and runtime logs.
-- Plotting, inference profiling, confidence analysis and referral rules.
-- Drafting and revising README explanations, tables and discussion.
+- Discussing dataset indexing and patient-independent splitting, and helping
+  draft the implementation. I ran the split audit and checked patient
+  separation and label consistency.
+- Helping draft and revise the CNN baseline, ConvNeXt integration, and
+  training and evaluation code. I tested the code on Rangpur and checked
+  the logs and metrics.
+- Explaining Slurm commands and error messages. I applied the job settings,
+  submitted jobs and checked their outputs.
+- Helping write plotting, inference profiling and confidence-analysis code,
+  and discussing the results. I examined the model comparisons and
+  prediction errors to assess the findings.
+- Helping organise the README and revise explanations of the methods,
+  results and limitations.
 
-I executed the commands and experiments on the UQ Rangpur cluster and
-provided the resulting logs and metrics for inspection. Numerical
-results reported here came from those executed experiments and saved
-outputs, rather than AI-generated estimates.
-
-Verification included patient split and label checks, model parameter
-counts, reproduction of saved validation metrics, inspection of test
-confusion matrices, and recorded GPU profiling measurements. Validation
-evaluation reproduced both selected checkpoints' saved metrics within
-the evaluator's numerical tolerance.
-
-The workflow also identified limitations requiring correction or
-qualification. An early smoke-test subset contained only one class
-and was subsequently balanced. Batch-normalisation recalibration was
-treated as a diagnostic and did not modify the final checkpoint.
-The confidence-referral analysis is explicitly labelled exploratory
-because it was developed after initial test results were available.
-
-AI suggestions and explanations were checked against available code,
-execution outputs and cited sources. These checks do not establish
-that every implementation detail is error-free. I remain responsible
-for the submitted code, interpretation and disclosure of limitations.
+I ran the experiments on the UQ Rangpur cluster and checked the outputs,
+including patient separation, reproduced validation results and prediction
+errors. I used these checks to assess the AI-assisted code and explanations.
+All reported numerical results came from the executed experiments and
+saved outputs.
 
 ## References
 
