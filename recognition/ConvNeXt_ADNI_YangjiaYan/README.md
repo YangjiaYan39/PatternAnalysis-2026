@@ -689,35 +689,80 @@ representative sample of the test set. The failure-case figure shows one illustr
 while each patient prediction uses multiple slices and scans.
 The anatomical causes of the errors were not established.
 
-### Possible causes and follow-up checks
+### Evidence from slice and scan predictions
 
-The examples suggest several checks, but do not establish why the
-models failed. Each displayed image is only one slice, whereas the
-reported prediction combines all available scans for that patient.
+A further audit traced the five selected cases through the saved test
+predictions. Recomputing slice-to-scan and scan-to-patient means
+reproduced the saved probabilities within a tolerance of 1e-6.
 
-- **Cases 1 and 3:** both models missed AD. One possibility is that
-  useful information was weak in individual slices or diluted by
-  averaging. Inspecting the spread of slice and scan probabilities
-  would help distinguish consistently incorrect predictions from
-  disagreement within a patient.
-- **Case 2:** the CNN was correct while ConvNeXt was confidently wrong.
-  This is consistent with the models learning different features.
-  ConvNeXt's training-validation gap also raises overfitting as a
-  possible contributor. Repeated patient splits and comparison with
-  a randomly initialised ConvNeXt would help investigate this.
-- **Case 4:** both models incorrectly predicted AD. Shared preprocessing
-  or similar learned features could contribute to a shared error.
-  Image quality and acquisition metadata should be compared with
-  correctly classified NC patients before drawing a conclusion.
-- **Case 5:** the displayed slice appears darker than the other
-  examples. This motivates checking foreground intensity and contrast
-  across the patient's scans and the wider dataset. It does not prove
-  that brightness caused the false positive.
+| Case | Slices / scans | CNN incorrect slices | CNN incorrect scans | ConvNeXt incorrect slices | ConvNeXt incorrect scans |
+|---|---|---|---|---|---|
+| 1 | 60 / 3 | 32/60 | 2/3 | 58/60 | 3/3 |
+| 2 | 20 / 1 | 5/20 | 0/1 | 19/20 | 1/1 |
+| 3 | 20 / 1 | 11/20 | 1/1 | 18/20 | 1/1 |
+| 4 | 20 / 1 | 20/20 | 1/1 | 19/20 | 1/1 |
+| 5 | 40 / 2 | 18/40 | 1/2 | 34/40 | 2/2 |
 
-These are follow-up hypotheses, not confirmed explanations. Any changes
-to preprocessing or aggregation should be developed using training and
-validation data, then assessed on a new held-out cohort. The inspected
-test cases should not be used to tune the reported models.
+For ConvNeXt, every scan in these five cases was misclassified, as were
+85.0% to 96.7% of the slices within each case. In Case 1, all three scan
+probabilities were below 0.5, ranging from 0.0017 to 0.1080 despite the
+AD label. In Case 5, both scans were incorrectly classified as AD, with
+probabilities from 0.8168 to 0.8431. The errors therefore existed before
+patient aggregation; averaging across scans did not reverse a correct
+scan-level majority in these cases.
+
+The CNN showed more disagreement within some patients. In Case 1,
+one of three scans correctly predicted AD, but the patient mean was
+0.4711 and produced an NC prediction. In Case 5, one scan incorrectly
+predicted AD, while the patient mean of 0.4560 correctly predicted NC.
+Aggregation can therefore conceal scan-level disagreement, although
+these examples do not show that a different aggregation rule would
+improve overall performance.
+
+Case 2 gives a direct contrast: the CNN correctly classified 15 of
+20 slices, whereas ConvNeXt correctly classified only one. This
+localises their difference to slice-level predictions, rather than
+disagreement between multiple scans.
+
+The audit identifies where the errors arose, but does not establish
+which anatomical features, image properties or training effects caused
+them. These selected confident errors cannot estimate how common each
+pattern is across the full test set. No model, threshold or aggregation
+rule was changed.
+
+Run `python analyse_failure_cases.py` from the project directory.
+It reads the previously generated failure-case details and test
+prediction CSVs under `~/data/`. The anonymised case summaries and
+scan details are saved in `results/failure_audit/`.
+
+### Remaining questions and follow-up checks
+
+The prediction audit narrows the aggregation explanation. ConvNeXt
+misclassified every scan in the five selected cases, so these errors
+cannot be explained solely by disagreement between scans being averaged
+into an incorrect patient prediction. It remains unclear why most
+individual slices were misclassified.
+
+- **Cases 1 and 3:** inspect the incorrectly classified slices alongside
+  correctly classified AD patients. The audit establishes widespread
+  slice-level errors, but does not identify their anatomical cause.
+- **Case 2:** the CNN correctly classified 15 of 20 slices and ConvNeXt
+  only one. Comparing their responses to the same slices could help
+  investigate the difference. The current evidence does not separate
+  architecture, pretraining or overfitting as its cause.
+- **Case 4:** both models misclassified the scan and nearly all slices.
+  Compare image quality and acquisition metadata with correctly
+  classified NC patients to investigate the shared error.
+- **Case 5:** both ConvNeXt scans were incorrect. The displayed slice
+  appears darker than the other examples, motivating an intensity and
+  contrast audit across all available slices. Brightness has not been
+  established as the cause.
+
+These checks are proposed follow-up work, not completed experiments.
+Any changes to preprocessing or aggregation should be developed on
+training and validation data and assessed on a new held-out cohort.
+The inspected test cases were used only for diagnosis; no model,
+classification threshold or referral threshold was changed.
 
 ## Practical recommendation
 
