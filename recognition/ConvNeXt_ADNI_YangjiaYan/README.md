@@ -11,6 +11,8 @@ the original paper's ImageNet experiments.
 
 ## Feasibility review
 
+Chosen project: ADNI classification with ConvNeXt, Hard difficulty.
+
 ### Scope and acceptance criteria
 
 The project investigates AD versus NC classification from ADNI MRI
@@ -69,10 +71,9 @@ sections; they are not presented as preliminary review evidence.
 
 ### Review outcome and tutor feedback
 
-The feasibility review was completed with a tutor on 23 October 2026.
-Feedback requested a model architecture diagram, explicit prerequisites
-and training parameter settings in the final report. These are included
-in the architecture figure, environment section and training table.
+I completed the feasibility review on 23 October 2026. The tutor asked
+me to include a model diagram, prerequisites and training settings.
+These are now included in this report.
 
 ## Environment and prerequisites
 
@@ -149,6 +150,16 @@ python dataset.py \
 ```
 
 Reuse the same manifest for all model comparisons.
+
+The 70/15/15 patient split reserves most patients for learning while keeping
+separate validation and test groups. Stratification preserves the patient
+class proportions as closely as possible. Patient grouping prevents slices
+or repeat scans from the same person appearing on both sides of an
+evaluation. The validation group is used for development and checkpoint
+selection; the test group is used for the final fixed-model comparison.
+The proportion is a practical allocation, not a demonstrated optimum.
+Combining the course's original folders creates a new internal evaluation;
+it is not an evaluation on the original supplied test partition.
 
 ## Preprocessing
 
@@ -331,6 +342,34 @@ There were eight false negatives and five false positives.
 
 Full validation and test metrics are in `results/metrics_summary.csv`.
 
+### Test precision and recall by class
+
+Precision measures how often a predicted class is correct. Recall measures
+how many members of that true class were identified. AD recall is AD
+sensitivity; NC recall is NC specificity. All values below use the fixed
+classification threshold of 0.5.
+
+| Level | Model | Class | Support | Precision | Recall | F1 |
+|---|---|---|---:|---:|---:|---:|
+| slice | CNN | NC | 2180 | 0.7461 | 0.8330 | 0.7872 |
+| slice | CNN | AD | 2420 | 0.8319 | 0.7446 | 0.7859 |
+| scan | CNN | NC | 109 | 0.7603 | 0.8440 | 0.8000 |
+| scan | CNN | AD | 121 | 0.8440 | 0.7603 | 0.8000 |
+| patient | CNN | NC | 69 | 0.8406 | 0.8406 | 0.8406 |
+| patient | CNN | AD | 33 | 0.6667 | 0.6667 | 0.6667 |
+| slice | ConvNeXt-Tiny | NC | 2180 | 0.7877 | 0.8647 | 0.8244 |
+| slice | ConvNeXt-Tiny | AD | 2420 | 0.8663 | 0.7901 | 0.8265 |
+| scan | ConvNeXt-Tiny | NC | 109 | 0.8250 | 0.9083 | 0.8646 |
+| scan | ConvNeXt-Tiny | AD | 121 | 0.9091 | 0.8264 | 0.8658 |
+| patient | ConvNeXt-Tiny | NC | 69 | 0.8889 | 0.9275 | 0.9078 |
+| patient | ConvNeXt-Tiny | AD | 33 | 0.8333 | 0.7576 | 0.7937 |
+
+These values are taken from `results/confidence/per_class_metrics.csv`,
+which also contains validation results. At patient level, ConvNeXt's AD
+precision was 0.8333, but recall was 0.7576: eight of 33 AD patients
+were missed. The smaller CNN missed 11 AD patients. These class-specific
+results explain why overall accuracy alone is insufficient.
+
 ## Training behaviour and test interpretation
 
 ![Training and validation curves](results/figures/training_curves.png)
@@ -458,6 +497,88 @@ described as a prospectively validated deployment policy.
 ![Patient confidence and referral analysis](results/confidence/confidence_analysis.png)
 
 Detailed results are in `results/confidence/`.
+
+## Prediction examples and reproduction
+
+### Run checkpoint inference and resource profiling
+
+Activate the documented environment and run these commands from this
+project directory inside an allocated GPU Slurm job:
+
+```bash
+python -u predict.py \
+  --checkpoint ~/data/comp3710_a3_runs_lr1e4/cnn/full/best_model.pth \
+  --manifest ~/data/comp3710_a3_adni_split.csv \
+  --split val --examples 5 \
+  --output-dir ~/data/comp3710_a3_prediction_examples/cnn
+
+python -u predict.py \
+  --checkpoint ~/data/comp3710_a3_runs_pretrained/convnext/full/best_model.pth \
+  --manifest ~/data/comp3710_a3_adni_split.csv \
+  --split val --examples 5 \
+  --output-dir ~/data/comp3710_a3_prediction_examples/convnext
+```
+
+The script loads checkpoint weights without downloading pretrained
+weights or updating the model. It writes `resource_profile.json`,
+`prediction_examples.json` and `prediction_examples.png` in each output
+directory. Use `--split test` to display test examples instead; the
+benchmark input remains a validation slice for both models.
+
+Each model input is a preprocessed tensor of shape (1, 3, 224, 224).
+The output is two logits, converted with softmax to P(AD); P(AD) >= 0.5
+predicts AD. The following are the first three recorded validation
+examples from the completed profiling job:
+
+| Example | True label | CNN P(AD) | CNN prediction | ConvNeXt P(AD) | ConvNeXt prediction |
+|---|---|---:|---|---:|---|
+| 1 | AD | 0.6990 | AD | 0.9628 | AD |
+| 2 | AD | 0.6133 | AD | 0.9986 | AD |
+| 3 | AD | 0.8438 | AD | 0.9974 | AD |
+
+These are slice-level predictions from different patients, selected in
+manifest order independently of model scores. All five recorded examples
+were AD patients. They demonstrate checkpoint usage, not balanced
+performance; final performance is measured on the full test split.
+
+### Reproduce the confidence analysis
+
+First generate the validation and test CSVs using `evaluate.py`.
+Then run this CPU-only analysis from the project directory:
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python analyse_confidence.py
+```
+
+The script reads `{slice,scan,patient}_predictions.csv` under
+`~/data/comp3710_a3_evaluation/{cnn,convnext}/{val,test}/`.
+It writes per-class metrics, confidence bins, patient confidence summaries,
+referral rules and plots to `results/confidence/`, replacing existing
+analysis outputs. It does not change checkpoints or source predictions.
+
+There are no command-line arguments. Set `BASE` and `OUT` near the top
+of `analyse_confidence.py` if different input or output paths are needed.
+Run model evaluation before this analysis; the Git repository does not
+contain the individual prediction CSVs.
+
+### Reproducibility limits
+
+The fixed split seed is 42. Training scripts record the configuration,
+metrics and elapsed time in `history.json`. Reusing the selected
+checkpoints reproduced validation metrics within numerical tolerance.
+Retraining is not guaranteed to reproduce identical weights or scores
+across GPUs and software versions. This study used one seed per final
+configuration and did not estimate between-run variation.
+
+### Source attribution
+
+`modules.py` defines the small CNN and wraps Torchvision's ConvNeXt-Tiny.
+The ConvNeXt architecture follows Liu et al. [1]; its backbone and
+pretrained weights come from Torchvision [2]. This project implements the
+ADNI data pipeline, binary-classification adaptation and evaluation
+workflow around those components. ImageNet normalisation uses the
+pretrained input convention; MRI resizing and training rotation are
+project preprocessing choices.
 
 ## Figures
 

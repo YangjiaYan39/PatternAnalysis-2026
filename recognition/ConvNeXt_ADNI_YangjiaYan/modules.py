@@ -49,7 +49,14 @@ class SimpleCNN(nn.Module):
 
 
 class ConvNeXtClassifier(nn.Module):
-    """ConvNeXt-Tiny adapted for binary ADNI MRI classification."""
+    """Adapt Torchvision ConvNeXt-Tiny for binary ADNI classification.
+
+    Architecture: Liu et al. (2022), A ConvNet for the 2020s, CVPR.
+    https://openaccess.thecvf.com/content/CVPR2022/html/Liu_A_ConvNet_for_the_2020s_CVPR_2022_paper.html
+    Backbone implementation and pretrained weights: torchvision.models.
+    https://github.com/pytorch/vision/blob/main/torchvision/models/convnext.py
+    The backbone is reused; this wrapper replaces its output classifier.
+    """
 
     def __init__(self, num_classes=2, pretrained=False):
         super().__init__()
