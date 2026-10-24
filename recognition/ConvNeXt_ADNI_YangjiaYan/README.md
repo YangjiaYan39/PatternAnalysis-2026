@@ -592,8 +592,7 @@ It writes figures to `~/data/comp3710_a3_figures/`.
 `plot_architecture.py` writes to `results/figures/`.
 
 The repository includes training curves, test ROC curves, confusion
-matrices and the model architecture overview. Error-case images remain
-outside the repository.
+matrices and the model architecture overview. The five selected error-case images are included below.
 
 Error cases were selected as the three most confident ConvNeXt
 patient-level false negatives and two most confident false positives.
@@ -601,6 +600,8 @@ Each displayed MRI is one illustrative slice; the reported score is
 aggregated across the patient's scans.
 
 ## Failure-case analysis
+
+![Five selected test errors](results/figures/test_failure_cases.png)
 
 Five patients were selected from ConvNeXt's test errors: the three
 most confident false negatives and two most confident false positives.
@@ -654,10 +655,39 @@ examples, but this alone does not show that intensity caused the error.
 An intensity audit would be needed before changing preprocessing.
 
 These cases were selected for confident errors and are not a
-representative sample of the test set. The locally generated
-failure-case figure shows one illustrative slice per patient,
+representative sample of the test set. The failure-case figure shows one illustrative slice per patient,
 while each patient prediction uses multiple slices and scans.
 The anatomical causes of the errors were not established.
+
+### Possible causes and follow-up checks
+
+The examples suggest several checks, but do not establish why the
+models failed. Each displayed image is only one slice, whereas the
+reported prediction combines all available scans for that patient.
+
+- **Cases 1 and 3:** both models missed AD. One possibility is that
+  useful information was weak in individual slices or diluted by
+  averaging. Inspecting the spread of slice and scan probabilities
+  would help distinguish consistently incorrect predictions from
+  disagreement within a patient.
+- **Case 2:** the CNN was correct while ConvNeXt was confidently wrong.
+  This is consistent with the models learning different features.
+  ConvNeXt's training-validation gap also raises overfitting as a
+  possible contributor. Repeated patient splits and comparison with
+  a randomly initialised ConvNeXt would help investigate this.
+- **Case 4:** both models incorrectly predicted AD. Shared preprocessing
+  or similar learned features could contribute to a shared error.
+  Image quality and acquisition metadata should be compared with
+  correctly classified NC patients before drawing a conclusion.
+- **Case 5:** the displayed slice appears darker than the other
+  examples. This motivates checking foreground intensity and contrast
+  across the patient's scans and the wider dataset. It does not prove
+  that brightness caused the false positive.
+
+These are follow-up hypotheses, not confirmed explanations. Any changes
+to preprocessing or aggregation should be developed using training and
+validation data, then assessed on a new held-out cohort. The inspected
+test cases should not be used to tune the reported models.
 
 ## Practical recommendation
 
