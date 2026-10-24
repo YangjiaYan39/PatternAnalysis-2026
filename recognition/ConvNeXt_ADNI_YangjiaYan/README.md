@@ -325,6 +325,29 @@ The evaluator saves metrics and predictions at slice, scan and patient
 levels. Confusion matrices use true labels as rows and predicted labels
 as columns, ordered [NC, AD].
 
+### Test evaluation through train.py
+
+`train.py` also provides a test-only entry that calls `evaluate.py`.
+It loads the specified checkpoint and evaluates the fixed test split
+without running training. The model type comes from the checkpoint.
+
+Run inside an allocated GPU Slurm job:
+
+```bash
+python -u train.py \
+  --test-checkpoint ~/data/comp3710_a3_runs_lr1e4/cnn/full/best_model.pth \
+  --test-output-dir ~/data/comp3710_a3_entry_check/cnn \
+  --batch-size 32 --workers 4
+
+python -u train.py \
+  --test-checkpoint ~/data/comp3710_a3_runs_pretrained/convnext/full/best_model.pth \
+  --test-output-dir ~/data/comp3710_a3_entry_check/convnext \
+  --batch-size 32 --workers 4
+```
+
+These commands write metrics and prediction CSVs to separate directories.
+The reported experiments used the direct `evaluate.py` commands above.
+
 ## Test results
 
 | Level | Model | Accuracy | Macro-F1 | AUROC |

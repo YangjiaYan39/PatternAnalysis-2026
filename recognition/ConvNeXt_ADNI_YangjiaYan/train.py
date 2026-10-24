@@ -311,12 +311,42 @@ def main():
         default=Path.home() / "data" / "comp3710_a3_runs",
     )
 
+    parser.add_argument(
+        "--test-checkpoint", type=Path,
+        help="Evaluate a saved checkpoint on the test split without training.",
+    )
+    parser.add_argument(
+        "--test-output-dir", type=Path,
+        help="Directory for test metrics and prediction CSVs.",
+    )
+
     args = parser.parse_args()
 
     if args.epochs < 1 or args.batch_size < 1:
         parser.error(
             "Epochs and batch size must be positive."
         )
+
+    if args.test_checkpoint is not None:
+        if args.test_output_dir is None:
+            parser.error("--test-checkpoint requires --test-output-dir.")
+        import subprocess
+        import sys
+
+        subprocess.run([
+            sys.executable, "-u",
+            str(Path(__file__).resolve().with_name("evaluate.py")),
+            "--checkpoint", str(args.test_checkpoint),
+            "--output-dir", str(args.test_output_dir),
+            "--manifest", str(args.manifest),
+            "--split", "test",
+            "--batch-size", str(args.batch_size),
+            "--workers", str(args.workers),
+        ], check=True)
+        return
+
+    if args.test_output_dir is not None:
+        parser.error("--test-output-dir requires --test-checkpoint.")
 
     set_seed(args.seed)
 
